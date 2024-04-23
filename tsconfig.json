@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "sourceMap": true,
+    "outDir": "dist",
+    "strict": true,
+    "lib": ["esnext"],
+    "esModuleInterop": true,
+    "typeRoots": ["node_modules/@types", "src/types"],
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext"
+    // "paths": {}
+  },
+
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules"],
+  "files": ["src/types/express/index.d.ts"]
+}
