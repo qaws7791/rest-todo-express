@@ -14,7 +14,7 @@ export const contentTypeMiddleware = (
 ) => {
   const method = req.method;
   const contentType = req.headers["content-type"];
-  if (method === "GET") {
+  if (method !== "POST" && method !== "PATCH" && method !== "PUT") {
     return next();
   }
 
@@ -25,7 +25,7 @@ export const contentTypeMiddleware = (
     return next(new AppError("Missing 'Content-Type' header", 415, details));
   }
 
-  if (method !== "GET" && !VALID_CONTENT_TYPES.includes(contentType)) {
+  if (!VALID_CONTENT_TYPES.includes(contentType)) {
     const details = `Supported Content-Types: ${VALID_CONTENT_TYPES.join(
       ", "
     )}`;
