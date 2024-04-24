@@ -1,4 +1,4 @@
-import { z, ZodError, ZodSchema } from "zod";
+import { z, ZodError } from "zod";
 import { AppError } from "../utils/appError";
 import { NextFunction, Request, Response } from "express";
 
@@ -22,9 +22,21 @@ export const validate =
           };
         });
 
-        next(new AppError("Invalid request", 400, errorMessages));
+        next(
+          new AppError({
+            name: "Bad request",
+            statusCode: 400,
+            message: errorMessages,
+          })
+        );
       } else {
-        next(new AppError("Internal server error", 500));
+        next(
+          new AppError({
+            name: "Internal server error",
+            statusCode: 500,
+            message: "Error validating request",
+          })
+        );
       }
     }
   };

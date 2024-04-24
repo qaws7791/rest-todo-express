@@ -18,18 +18,34 @@ export const contentTypeMiddleware = (
     return next();
   }
 
+  if (req.body && Object.keys(req.body).length === 0) {
+    return next();
+  }
+
   if (!contentType) {
     const details = `Supported Content-Types: ${VALID_CONTENT_TYPES.join(
       ", "
     )}`;
-    return next(new AppError("Missing 'Content-Type' header", 415, details));
+    return next(
+      new AppError({
+        name: "Unsupported Media Type",
+        statusCode: 415,
+        message: details,
+      })
+    );
   }
 
   if (!VALID_CONTENT_TYPES.includes(contentType)) {
     const details = `Supported Content-Types: ${VALID_CONTENT_TYPES.join(
       ", "
     )}`;
-    return next(new AppError("Invalid 'Content-Type' header", 415, details));
+    return next(
+      new AppError({
+        name: "Unsupported Media Type",
+        statusCode: 415,
+        message: details,
+      })
+    );
   }
 
   next();

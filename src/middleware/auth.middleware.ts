@@ -12,12 +12,22 @@ export const authMiddleware = (
 ) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
-    return next(new AppError("Authorization header missing", 401));
+    return next({
+      name: "Unauthorized",
+      statusCode: 401,
+      message: "Authorization header is required",
+    });
   }
 
   const [bearer, token] = authHeader.split(" ");
   if (bearer !== "Bearer" || !token) {
-    return next(new AppError("Invalid authorization header", 401));
+    return next(
+      new AppError({
+        name: "Unauthorized",
+        statusCode: 401,
+        message: "Invalid authorization header",
+      })
+    );
   }
 
   try {
@@ -25,6 +35,12 @@ export const authMiddleware = (
     req.userId = (decoded as { userId: number }).userId;
     next();
   } catch (error) {
-    return next(new AppError("Invalid token", 401));
+    return next(
+      new AppError({
+        name: "Unauthorized",
+        statusCode: 401,
+        message: "Invalid token",
+      })
+    );
   }
 };

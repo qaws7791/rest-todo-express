@@ -39,7 +39,7 @@ export default class TasksController {
     async (req: CustomRequest<GetTaskPaginationInput>, res: Response) => {
       try {
         const { cursor, limit } = req.query;
-        console.log(req.userId);
+
         const tasks = await this.tasksModel.getAllTasks(
           req.userId,
           cursor,
@@ -52,7 +52,11 @@ export default class TasksController {
           data: tasksWithLinks,
         });
       } catch (error) {
-        throw new AppError("Error getting tasks", 500);
+        throw new AppError({
+          name: "Internal server error",
+          statusCode: 500,
+          message: "Error getting tasks",
+        });
       }
     }
   );
@@ -68,7 +72,13 @@ export default class TasksController {
         const task = await this.tasksModel.getTask(taskId);
 
         if (!task) {
-          return next(new AppError("Task not found", 404));
+          return next(
+            new AppError({
+              name: "Not found",
+              statusCode: 404,
+              message: "Task not found",
+            })
+          );
         }
         const taskWithLinks = this.addHateoasLinks(task, req);
 
@@ -76,7 +86,11 @@ export default class TasksController {
           data: taskWithLinks,
         });
       } catch (error) {
-        throw new AppError("Error getting task", 500);
+        throw new AppError({
+          name: "Internal server error",
+          statusCode: 500,
+          message: "Error getting task",
+        });
       }
     }
   );
@@ -88,16 +102,17 @@ export default class TasksController {
       next: NextFunction
     ) => {
       const { title } = req.body;
-      if (!title) {
-        return next(new AppError("Title is required", 400));
-      }
 
       try {
         const newTask = await this.tasksModel.createTask(title, req.userId);
 
         res.status(201).location(`/api/v1/tasks/${newTask.id}`).json(newTask);
       } catch (error) {
-        throw new AppError("Error creating task", 500);
+        throw new AppError({
+          name: "Internal server error",
+          statusCode: 500,
+          message: "Error creating task",
+        });
       }
     }
   );
@@ -118,12 +133,22 @@ export default class TasksController {
           done
         );
         if (!updatedTask) {
-          return next(new AppError("Task not found", 404));
+          return next(
+            new AppError({
+              name: "Not found",
+              statusCode: 404,
+              message: "Task not found",
+            })
+          );
         }
 
         res.status(204).end();
       } catch (error) {
-        throw new AppError("Error updating task", 500);
+        throw new AppError({
+          name: "Internal server error",
+          statusCode: 500,
+          message: "Error updating task",
+        });
       }
     }
   );
@@ -141,12 +166,56 @@ export default class TasksController {
           req.userId
         );
         if (!deletedTask) {
-          return next(new AppError("Task not found", 404));
+          return next(
+            new AppError({
+              name: "Not found",
+              statusCode: 404,
+              message: "Task not found",
+            })
+          );
         }
         res.status(204).end();
       } catch (error) {
-        throw new AppError("Error deleting task", 500);
+        throw new AppError({
+          name: "Internal server error",
+          statusCode: 500,
+          message: "Error deleting task",
+        });
       }
     }
   );
+
+  invalidMethod = {
+    "/": (req: Request, res: Response, next: NextFunction) => {
+      next(
+        new AppError({
+          name: "Method not allowed",
+          statusCode: 405,
+          message: "Invalid method",
+          headers: { Allow: "GET, POST" },
+        })
+      );
+    },
+    "/:id": (req: Request, res: Response, next: NextFunction) => {
+      next(
+        new AppError({
+          name: "Method not allowed",
+          statusCode: 405,
+          message: "Invalid method",
+          headers: { Allow: "GET, PATCH, DELETE" },
+        })
+      );
+
+      // res
+      //   .header("Allow", "GET, PATCH, DELETE")
+      //   .status(405)
+      //   .json({
+      //     error: {
+      //       code: 405,
+      //       name: "Method not allowed",
+      //       details: "Invalid method",
+      //     },
+      //   });
+    },
+  };
 }

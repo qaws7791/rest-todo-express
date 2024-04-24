@@ -19,24 +19,38 @@ router.get(
   validate(GetTaskPaginationSchema),
   tasksController.getAllTasks
 );
-router.get(
-  "/:id",
-  authMiddleware,
-  validate(GetTaskSchema),
-  tasksController.getTask
-);
+
 router.post(
   "/",
   authMiddleware,
   validate(CreateTaskSchema),
   tasksController.createTask
 );
+
+router.put("/", tasksController.invalidMethod["/"]);
+
+router.patch("/", tasksController.invalidMethod["/"]);
+
+router.delete("/", tasksController.invalidMethod["/"]);
+
+router.get(
+  "/:id",
+  authMiddleware,
+  validate(GetTaskSchema),
+  tasksController.getTask
+);
+
+router.post("/:id", tasksController.invalidMethod["/:id"]);
+
+router.put("/:id", tasksController.invalidMethod["/:id"]);
+
 router.patch(
   "/:id",
   authMiddleware,
   validate(UpdateTaskSchema),
   tasksController.updateTask
 );
+
 router.delete(
   "/:id",
   authMiddleware,
