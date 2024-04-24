@@ -9,7 +9,8 @@ import {
   DeleteTaskInput,
   GetTaskInput,
   GetTaskPaginationInput,
-  UpdateTaskInput,
+  PatchTaskInput,
+  PutTaskInput,
 } from "../schemas/task.schema";
 import { CustomRequest } from "../types";
 
@@ -117,9 +118,45 @@ export default class TasksController {
     }
   );
 
+  putTask = asyncHandler(
+    async (
+      req: CustomRequest<PutTaskInput>,
+      res: Response,
+      next: NextFunction
+    ) => {
+      const { title, done } = req.body;
+      const taskId = parseInt(req.params.id);
+      try {
+        const updatedTask = await this.tasksModel.updateTask(
+          taskId,
+          req.userId,
+          title,
+          done
+        );
+        if (!updatedTask) {
+          return next(
+            new AppError({
+              name: "Not found",
+              statusCode: 404,
+              message: "Task not found",
+            })
+          );
+        }
+
+        res.status(204).end();
+      } catch (error) {
+        throw new AppError({
+          name: "Internal server error",
+          statusCode: 500,
+          message: "Error updating task",
+        });
+      }
+    }
+  );
+
   updateTask = asyncHandler(
     async (
-      req: CustomRequest<UpdateTaskInput>,
+      req: CustomRequest<PatchTaskInput>,
       res: Response,
       next: NextFunction
     ) => {

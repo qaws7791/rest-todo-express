@@ -7,7 +7,8 @@ import {
   DeleteTaskSchema,
   GetTaskPaginationSchema,
   GetTaskSchema,
-  UpdateTaskSchema,
+  PatchTaskSchema,
+  PutTaskSchema,
 } from "../schemas/task.schema";
 
 const router = express.Router();
@@ -42,12 +43,17 @@ router.get(
 
 router.post("/:id", tasksController.invalidMethod["/:id"]);
 
-router.put("/:id", tasksController.invalidMethod["/:id"]);
+router.put(
+  "/:id",
+  authMiddleware,
+  validateSchema(PutTaskSchema),
+  tasksController.putTask
+);
 
 router.patch(
   "/:id",
   authMiddleware,
-  validateSchema(UpdateTaskSchema),
+  validateSchema(PatchTaskSchema),
   tasksController.updateTask
 );
 
