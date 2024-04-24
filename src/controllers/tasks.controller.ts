@@ -1,10 +1,11 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import TasksModel from "../models/tasks.model";
 import { TaskDto } from "../dtos/task.dto";
 import { HateoasLinks } from "../dtos/common.dto";
 import asyncHandler from "../utils/asyncHandler";
 import { AppError } from "../utils/appError";
 import {
+  CreateTaskInput,
   DeleteTaskInput,
   GetTaskInput,
   GetTaskPaginationInput,
@@ -26,8 +27,8 @@ export default class TasksController {
       {
         rel: "update",
         href: resourceUrl,
-        action: "PUT",
-        types: ["application/json"],
+        action: "PATCH",
+        types: ["application/json", "application/merge-patch+json"],
       },
       { rel: "delete", href: resourceUrl, action: "DELETE" },
     ];
@@ -37,16 +38,19 @@ export default class TasksController {
   getAllTasks = asyncHandler(
     async (req: CustomRequest<GetTaskPaginationInput>, res: Response) => {
       try {
-        const cursor: number = req.query.cursor
-          ? parseInt(req.query.cursor)
-          : 0;
-        const limit: number = req.query.limit ? parseInt(req.query.limit) : 10;
-
-        const tasks = await this.tasksModel.getAllTasks(cursor, limit);
+        const { cursor, limit } = req.query;
+        console.log(req.userId);
+        const tasks = await this.tasksModel.getAllTasks(
+          req.userId,
+          cursor,
+          limit
+        );
         const tasksWithLinks = tasks.map((task) =>
           this.addHateoasLinks(task, req)
         );
-        res.json(tasksWithLinks);
+        res.json({
+          data: tasksWithLinks,
+        });
       } catch (error) {
         throw new AppError("Error getting tasks", 500);
       }
@@ -54,40 +58,56 @@ export default class TasksController {
   );
 
   getTask = asyncHandler(
-    async (req: CustomRequest<GetTaskInput>, res: Response) => {
+    async (
+      req: CustomRequest<GetTaskInput>,
+      res: Response,
+      next: NextFunction
+    ) => {
       try {
         const taskId = parseInt(req.params.id);
         const task = await this.tasksModel.getTask(taskId);
 
         if (!task) {
-          return res.status(404).end();
+          return next(new AppError("Task not found", 404));
         }
         const taskWithLinks = this.addHateoasLinks(task, req);
 
-        res.json(taskWithLinks);
+        res.json({
+          data: taskWithLinks,
+        });
       } catch (error) {
         throw new AppError("Error getting task", 500);
       }
     }
   );
 
-  createTask = asyncHandler(async (req: Request, res: Response) => {
-    const { title } = req.body;
-    if (!title) {
-      return res.status(400).json({ error: "Title is required" });
-    }
+  createTask = asyncHandler(
+    async (
+      req: CustomRequest<CreateTaskInput>,
+      res: Response,
+      next: NextFunction
+    ) => {
+      const { title } = req.body;
+      if (!title) {
+        return next(new AppError("Title is required", 400));
+      }
 
-    try {
-      const newTask = await this.tasksModel.createTask(title, req.userId);
+      try {
+        const newTask = await this.tasksModel.createTask(title, req.userId);
 
-      res.status(201).location(`/api/v1/tasks/${newTask.id}`).json(newTask);
-    } catch (error) {
-      throw new AppError("Error creating task", 500);
+        res.status(201).location(`/api/v1/tasks/${newTask.id}`).json(newTask);
+      } catch (error) {
+        throw new AppError("Error creating task", 500);
+      }
     }
-  });
+  );
 
   updateTask = asyncHandler(
-    async (req: CustomRequest<UpdateTaskInput>, res: Response) => {
+    async (
+      req: CustomRequest<UpdateTaskInput>,
+      res: Response,
+      next: NextFunction
+    ) => {
       const { title, done } = req.body;
       const taskId = parseInt(req.params.id);
       try {
@@ -98,19 +118,22 @@ export default class TasksController {
           done
         );
         if (!updatedTask) {
-          throw new AppError("Task not found", 404);
+          return next(new AppError("Task not found", 404));
         }
 
         res.status(204).end();
       } catch (error) {
-        if (error instanceof AppError) throw error;
         throw new AppError("Error updating task", 500);
       }
     }
   );
 
   deleteTask = asyncHandler(
-    async (req: CustomRequest<DeleteTaskInput>, res: Response) => {
+    async (
+      req: CustomRequest<DeleteTaskInput>,
+      res: Response,
+      next: NextFunction
+    ) => {
       try {
         const taskId = parseInt(req.params.id);
         const deletedTask = await this.tasksModel.deleteTask(
@@ -118,7 +141,7 @@ export default class TasksController {
           req.userId
         );
         if (!deletedTask) {
-          return res.status(404).end();
+          return next(new AppError("Task not found", 404));
         }
         res.status(204).end();
       } catch (error) {
