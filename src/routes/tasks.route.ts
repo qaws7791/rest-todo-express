@@ -1,7 +1,7 @@
 import express from "express";
 import TasksController from "../controllers/tasks.controller";
 import { authMiddleware } from "../middleware/auth.middleware";
-import { validate } from "../middleware/validate.middleware";
+import { validateSchema } from "../middleware/validateSchema.middleware";
 import {
   CreateTaskSchema,
   DeleteTaskSchema,
@@ -16,14 +16,14 @@ const tasksController = new TasksController();
 router.get(
   "/",
   authMiddleware,
-  validate(GetTaskPaginationSchema),
+  validateSchema(GetTaskPaginationSchema),
   tasksController.getAllTasks
 );
 
 router.post(
   "/",
   authMiddleware,
-  validate(CreateTaskSchema),
+  validateSchema(CreateTaskSchema),
   tasksController.createTask
 );
 
@@ -36,7 +36,7 @@ router.delete("/", tasksController.invalidMethod["/"]);
 router.get(
   "/:id",
   authMiddleware,
-  validate(GetTaskSchema),
+  validateSchema(GetTaskSchema),
   tasksController.getTask
 );
 
@@ -47,14 +47,14 @@ router.put("/:id", tasksController.invalidMethod["/:id"]);
 router.patch(
   "/:id",
   authMiddleware,
-  validate(UpdateTaskSchema),
+  validateSchema(UpdateTaskSchema),
   tasksController.updateTask
 );
 
 router.delete(
   "/:id",
   authMiddleware,
-  validate(DeleteTaskSchema),
+  validateSchema(DeleteTaskSchema),
   tasksController.deleteTask
 );
 
