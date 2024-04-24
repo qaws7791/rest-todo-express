@@ -18,7 +18,7 @@ export type GetTaskInput = z.infer<typeof GetTaskSchema>;
 
 export const CreateTaskSchema = z.object({
   body: z.object({
-    title: z.string(),
+    title: z.string().max(255),
   }),
 });
 
