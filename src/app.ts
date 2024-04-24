@@ -1,11 +1,13 @@
 import express from "express";
+import { config } from "dotenv";
+// Routes
 import tasksRouter from "./routes/tasks.route";
 import authRouter from "./routes/auth.route";
-import { config } from "dotenv";
+import notFountRouter from "./routes/notFount.route";
+// Middleware
 import { errorMiddleware } from "./middleware/error.middleware";
 import { contentTypeMiddleware } from "./middleware/contentType.middleware";
 import { acceptMiddleware } from "./middleware/accept.middleware";
-import { AppError } from "./utils/appError";
 
 config();
 
@@ -21,15 +23,7 @@ app.use("/api/v1/tasks", tasksRouter);
 app.use("/api/v1/auth", authRouter);
 
 // case of route not found
-app.use((req, res, next) => {
-  return next(
-    new AppError(
-      "Route not found",
-      404,
-      "The requested resource could not be found"
-    )
-  );
-});
+app.use(notFountRouter);
 
 app.use(errorMiddleware);
 
