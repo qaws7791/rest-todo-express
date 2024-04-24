@@ -3,17 +3,43 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 export default class TasksModel {
-  readonly CURSOR = 0;
+  readonly MIN_CURSOR = 1;
+  readonly CURSOR = 1;
   readonly LIMIT = 10;
+  readonly MIN_LIMIT = 1;
+  readonly MAX_LIMIT = 100;
 
-  async getAllTasks(cursor?: number, limit?: number) {
+  getPaginationParams(cursor?: string, limit?: string) {
+    const parsedCursor = cursor ? parseInt(cursor) : this.MIN_CURSOR;
+    const parsedLimit = limit ? parseInt(limit) : this.LIMIT;
+
+    return {
+      cursor: isNaN(parsedCursor)
+        ? this.MIN_CURSOR
+        : parsedCursor < this.MIN_CURSOR
+        ? this.MIN_CURSOR
+        : parsedCursor,
+      limit: isNaN(parsedLimit)
+        ? this.LIMIT
+        : parsedLimit < this.MIN_LIMIT
+        ? this.MIN_LIMIT
+        : parsedLimit > this.MAX_LIMIT
+        ? this.MAX_LIMIT
+        : parsedLimit,
+    };
+  }
+
+  async getAllTasks(userId: number, cursor?: string, limit?: string) {
+    const { cursor: parsedCursor, limit: parsedLimit } =
+      this.getPaginationParams(cursor, limit);
+
     const tasks = await prisma.task.findMany({
+      skip: cursor ? 1 : undefined,
+      cursor: cursor ? { id: parsedCursor } : undefined,
+      take: parsedLimit,
       where: {
-        id: {
-          gt: cursor || this.CURSOR,
-        },
+        userId,
       },
-      take: limit || this.LIMIT,
       orderBy: {
         id: "asc",
       },
