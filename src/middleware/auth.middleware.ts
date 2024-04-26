@@ -12,11 +12,13 @@ export const authMiddleware = (
 ) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
-    return next({
-      name: "Unauthorized",
-      statusCode: 401,
-      message: "Authorization header is required",
-    });
+    return next(
+      new AppError({
+        name: "Unauthorized",
+        statusCode: 401,
+        message: "Authorization header is required",
+      })
+    );
   }
 
   const [bearer, token] = authHeader.split(" ");
