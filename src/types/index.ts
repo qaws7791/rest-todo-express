@@ -24,3 +24,10 @@ export interface Pagination {
   lastPage: number;
   limit: number;
 }
+
+export interface HateoasLinks {
+  rel: string;
+  href: string;
+  action?: string;
+  types?: string[];
+}

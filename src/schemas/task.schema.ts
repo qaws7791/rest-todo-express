@@ -1,6 +1,9 @@
+import { Task } from "@prisma/client";
 import z from "zod";
 
 const TITLE_MAX_LENGTH = 255;
+
+export type TaskRes = Omit<Task, "deletedAt">;
 
 export const GetTaskPaginationSchema = z.object({
   query: z.object({

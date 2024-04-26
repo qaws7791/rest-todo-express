@@ -1,7 +1,5 @@
 import { NextFunction, Request, Response } from "express";
 import TasksModel from "../models/tasks.model";
-import { TaskDto } from "../dtos/task.dto";
-import { HateoasLinks } from "../dtos/common.dto";
 import asyncHandler from "../utils/asyncHandler";
 import { AppError } from "../utils/appError";
 import {
@@ -11,8 +9,9 @@ import {
   GetTaskPaginationInput,
   PatchTaskInput,
   PutTaskInput,
+  TaskRes,
 } from "../schemas/task.schema";
-import { CustomRequest, Pagination } from "../types";
+import { CustomRequest, HateoasLinks, Pagination } from "../types";
 import { parsePaginationParams } from "../utils/pagination";
 
 export default class TasksController {
@@ -22,7 +21,7 @@ export default class TasksController {
     this.tasksModel = new TasksModel();
   }
 
-  private hateoasifyTask = (task: TaskDto, req: Request) => {
+  private hateoasifyTask = (task: TaskRes, req: Request) => {
     const url = this.getUrl(req);
     const resourceUrl = `${url}/${task.id}`;
     const links: HateoasLinks[] = [
@@ -42,12 +41,12 @@ export default class TasksController {
     return `${req.protocol}://${req.get("host")}/api/v1/tasks`;
   }
 
-  private hateoasifyTasks = (tasks: TaskDto[], req: Request) => {
+  private hateoasifyTasks = (tasks: TaskRes[], req: Request) => {
     const newTasks = tasks.map((task) => this.hateoasifyTask(task, req));
     return newTasks;
   };
 
-  private addHateoasLinks = (task: TaskDto | TaskDto[], req: Request) => {
+  private addHateoasLinks = (task: TaskRes | TaskRes[], req: Request) => {
     if (Array.isArray(task)) {
       return this.hateoasifyTasks(task, req);
     }
