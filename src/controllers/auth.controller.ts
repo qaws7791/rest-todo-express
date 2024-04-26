@@ -5,6 +5,8 @@ import jwt from "jsonwebtoken";
 import env from "../utils/env";
 import { AppError } from "../utils/appError";
 import asyncHandler from "../utils/asyncHandler";
+import { CustomRequest } from "../types";
+import { LoginInput, RegisterInput } from "../schemas/auth.schema";
 
 const secretKey = env.TOKEN_SECRET;
 
@@ -16,16 +18,12 @@ export default class AuthController {
   }
 
   register = asyncHandler(
-    async (req: Request, res: Response, next: NextFunction) => {
+    async (
+      req: CustomRequest<RegisterInput>,
+      res: Response,
+      next: NextFunction
+    ) => {
       const { email, password } = req.body;
-
-      if (!email || !password) {
-        throw new AppError({
-          name: "Bad request",
-          statusCode: 400,
-          message: "Email and password are required",
-        });
-      }
 
       try {
         const existingUser = await this.userModel.findUser(email);
@@ -53,15 +51,13 @@ export default class AuthController {
   );
 
   login = asyncHandler(
-    async (req: Request, res: Response, next: NextFunction) => {
+    async (
+      req: CustomRequest<LoginInput>,
+      res: Response,
+      next: NextFunction
+    ) => {
       const { email, password } = req.body;
-      if (!email || !password) {
-        throw new AppError({
-          name: "Bad request",
-          statusCode: 400,
-          message: "Email and password are required",
-        });
-      }
+
       try {
         const user = await this.userModel.findUser(email);
         if (!user) {
