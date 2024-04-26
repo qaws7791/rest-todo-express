@@ -12,7 +12,8 @@ import {
   PatchTaskInput,
   PutTaskInput,
 } from "../schemas/task.schema";
-import { CustomRequest } from "../types";
+import { CustomRequest, Pagination } from "../types";
+import { parsePaginationParams } from "../utils/pagination";
 
 export default class TasksController {
   private tasksModel: TasksModel;
@@ -21,8 +22,9 @@ export default class TasksController {
     this.tasksModel = new TasksModel();
   }
 
-  addHateoasLinks = (task: TaskDto, req: Request) => {
-    const resourceUrl = `${req.protocol}://${req.hostname}/api/v1/tasks/${task.id}`;
+  private hateoasifyTask = (task: TaskDto, req: Request) => {
+    const url = this.getUrl(req);
+    const resourceUrl = `${url}/${task.id}`;
     const links: HateoasLinks[] = [
       { rel: "self", href: resourceUrl },
       {
@@ -36,21 +38,114 @@ export default class TasksController {
     return { ...task, links };
   };
 
-  getAllTasks = asyncHandler(
-    async (req: CustomRequest<GetTaskPaginationInput>, res: Response) => {
-      try {
-        const { cursor, limit } = req.query;
+  private getUrl(req: Request) {
+    return `${req.protocol}://${req.get("host")}/api/v1/tasks`;
+  }
 
-        const tasks = await this.tasksModel.getAllTasks(
+  private hateoasifyTasks = (tasks: TaskDto[], req: Request) => {
+    const newTasks = tasks.map((task) => this.hateoasifyTask(task, req));
+    return newTasks;
+  };
+
+  private addHateoasLinks = (task: TaskDto | TaskDto[], req: Request) => {
+    if (Array.isArray(task)) {
+      return this.hateoasifyTasks(task, req);
+    }
+    return this.hateoasifyTask(task, req);
+  };
+
+  private paginationLinks = (
+    req: Request,
+    pagination: Pagination,
+    query?: string
+  ) => {
+    const url = this.getUrl(req);
+    const links: HateoasLinks[] = [
+      {
+        rel: "self",
+        href: `${url}?page=${pagination.currentPage}&limit=${pagination.limit}${
+          query ? `&query=${query}` : ""
+        }`,
+        action: "GET",
+      },
+    ];
+
+    if (pagination.currentPage > 1) {
+      links.push(
+        {
+          rel: "first",
+          href: `${url}?page=1&limit=${pagination.limit}${
+            query ? `&query=${query}` : ""
+          }`,
+          action: "GET",
+        },
+        {
+          rel: "prev",
+          href: `${url}?page=${pagination.currentPage - 1}&limit=${
+            pagination.limit
+          }${query ? `&query=${query}` : ""}`,
+          action: "GET",
+        }
+      );
+    }
+
+    if (pagination.currentPage < pagination.totalPages) {
+      links.push(
+        {
+          rel: "next",
+          href: `${url}?page=${pagination.currentPage + 1}&limit=${
+            pagination.limit
+          }${query ? `&query=${query}` : ""}`,
+          action: "GET",
+        },
+        {
+          rel: "last",
+          href: `${url}?page=${pagination.totalPages}&limit=${
+            pagination.limit
+          }${query ? `&query=${query}` : ""}`,
+          action: "GET",
+        }
+      );
+    }
+
+    return links;
+  };
+
+  getAllTasks = asyncHandler(
+    async (
+      req: CustomRequest<GetTaskPaginationInput>,
+      res: Response,
+      next: NextFunction
+    ) => {
+      try {
+        const { query } = req.query;
+        const params = parsePaginationParams(req.query.page, req.query.limit);
+        if (!params) {
+          return next(
+            new AppError({
+              name: "Bad request",
+              statusCode: 400,
+              message: "Invalid query parameters",
+            })
+          );
+        }
+
+        const { page, limit } = params;
+
+        const { tasks, pagination } = await this.tasksModel.getAllTasks(
           req.userId,
-          cursor,
-          limit
+          { page, limit, query }
         );
         const tasksWithLinks = tasks.map((task) =>
           this.addHateoasLinks(task, req)
         );
+
+        const links = this.paginationLinks(req, pagination, query);
+
         res.json({
           data: tasksWithLinks,
+          pagination,
+          links,
         });
       } catch (error) {
         throw new AppError({
@@ -242,17 +337,6 @@ export default class TasksController {
           headers: { Allow: "GET, PATCH, DELETE" },
         })
       );
-
-      // res
-      //   .header("Allow", "GET, PATCH, DELETE")
-      //   .status(405)
-      //   .json({
-      //     error: {
-      //       code: 405,
-      //       name: "Method not allowed",
-      //       details: "Invalid method",
-      //     },
-      //   });
     },
   };
 }

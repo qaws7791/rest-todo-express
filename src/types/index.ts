@@ -16,3 +16,11 @@ type EnsureQuery<T extends CRequest> = "query" extends keyof T
 
 export interface CustomRequest<T extends CRequest>
   extends ExpressRequest<EnsureParams<T>, any, EnsureBody<T>, EnsureQuery<T>> {}
+
+export interface Pagination {
+  totalRecords: number;
+  totalPages: number;
+  currentPage: number;
+  lastPage: number;
+  limit: number;
+}

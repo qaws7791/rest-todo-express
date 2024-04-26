@@ -1,51 +1,46 @@
 import { PrismaClient } from "@prisma/client";
+import { Pagination } from "../types";
 
 const prisma = new PrismaClient();
 
 export default class TasksModel {
-  readonly MIN_CURSOR = 1;
-  readonly CURSOR = 1;
-  readonly LIMIT = 10;
-  readonly MIN_LIMIT = 1;
-  readonly MAX_LIMIT = 100;
-
-  getPaginationParams(cursor?: string, limit?: string) {
-    const parsedCursor = cursor ? parseInt(cursor) : this.MIN_CURSOR;
-    const parsedLimit = limit ? parseInt(limit) : this.LIMIT;
-
-    return {
-      cursor: isNaN(parsedCursor)
-        ? this.MIN_CURSOR
-        : parsedCursor < this.MIN_CURSOR
-        ? this.MIN_CURSOR
-        : parsedCursor,
-      limit: isNaN(parsedLimit)
-        ? this.LIMIT
-        : parsedLimit < this.MIN_LIMIT
-        ? this.MIN_LIMIT
-        : parsedLimit > this.MAX_LIMIT
-        ? this.MAX_LIMIT
-        : parsedLimit,
-    };
-  }
-
-  async getAllTasks(userId: number, cursor?: string, limit?: string) {
-    const { cursor: parsedCursor, limit: parsedLimit } =
-      this.getPaginationParams(cursor, limit);
-
+  async getAllTasks(
+    userId: number,
+    { page, limit, query }: { page: number; limit: number; query?: string }
+  ) {
     const tasks = await prisma.task.findMany({
-      skip: cursor ? 1 : undefined,
-      cursor: cursor ? { id: parsedCursor } : undefined,
-      take: parsedLimit,
+      skip: (page - 1) * limit,
+      take: limit,
       where: {
         userId,
+        title: {
+          contains: query,
+        },
       },
       orderBy: {
         id: "asc",
       },
     });
 
-    return tasks;
+    const totalTasks = await prisma.task.count({
+      where: {
+        userId,
+      },
+    });
+    const totalPages = Math.ceil(totalTasks / limit);
+
+    const pagination: Pagination = {
+      totalRecords: totalTasks,
+      totalPages,
+      currentPage: page,
+      lastPage: totalPages,
+      limit,
+    };
+
+    return {
+      tasks,
+      pagination,
+    };
   }
 
   async getTask(id: number) {

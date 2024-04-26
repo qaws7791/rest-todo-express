@@ -4,8 +4,9 @@ const TITLE_MAX_LENGTH = 255;
 
 export const GetTaskPaginationSchema = z.object({
   query: z.object({
-    cursor: z.string().optional(),
+    page: z.string().optional(),
     limit: z.string().optional(),
+    query: z.string().optional(),
   }),
 });
 
