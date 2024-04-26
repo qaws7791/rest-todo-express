@@ -14,7 +14,11 @@ config();
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+app.use(
+  express.json({
+    type: ["json", "+json"],
+  })
+);
 app.use(express.urlencoded({ extended: true }));
 app.use(contentTypeMiddleware);
 app.use(acceptMiddleware);
