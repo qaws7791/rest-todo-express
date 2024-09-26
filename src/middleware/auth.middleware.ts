@@ -2,8 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import env from "../utils/env";
 import { AppError } from "../utils/appError";
-
-const secretKey = env.TOKEN_SECRET;
+import { accessTokenSchema } from "../schemas/token.schema";
 
 export const authMiddleware = (
   req: Request,
@@ -33,8 +32,13 @@ export const authMiddleware = (
   }
 
   try {
-    const decoded = jwt.verify(token, secretKey);
-    req.userId = (decoded as { userId: number }).userId;
+    const decoded = jwt.verify(token, env.ACCESS_TOKEN_SECRET);
+    const result = accessTokenSchema.safeParse(decoded);
+    if (!result.success) {
+      throw new Error("Invalid token");
+    }
+
+    req.userId = result.data.userId;
     next();
   } catch (error) {
     return next(
