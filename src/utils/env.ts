@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 const envSchema = z.object({
-  TOKEN_SECRET: z.string(),
+  ACCESS_TOKEN_SECRET: z.string(),
+  REFRESH_TOKEN_SECRET: z.string(),
 });
 
 const env = envSchema.safeParse(process.env);
