@@ -8,8 +8,6 @@ import asyncHandler from "../utils/asyncHandler";
 import { CustomRequest } from "../types";
 import { LoginInput, RegisterInput } from "../schemas/auth.schema";
 
-const secretKey = env.TOKEN_SECRET;
-
 export default class AuthController {
   private userModel: UserModel;
 
@@ -79,10 +77,22 @@ export default class AuthController {
             })
           );
         }
-        const token = jwt.sign({ userId: user.id }, secretKey, {
-          expiresIn: "1h",
-        });
-        res.json({ token });
+
+        const accessToken = jwt.sign(
+          { userId: user.id, type: "access" },
+          env.ACCESS_TOKEN_SECRET,
+          {
+            expiresIn: "1h",
+          }
+        );
+        const refreshToken = jwt.sign(
+          { userId: user.id, type: "refresh" },
+          env.REFRESH_TOKEN_SECRET,
+          {
+            expiresIn: "7d",
+          }
+        );
+        res.json({ accessToken, refreshToken });
       } catch (error) {
         throw new AppError({
           name: "Internal server error",
