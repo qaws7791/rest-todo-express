@@ -7,6 +7,7 @@ import { AppError } from "../utils/appError";
 import asyncHandler from "../utils/asyncHandler";
 import { CustomRequest } from "../types";
 import { LoginInput, RegisterInput } from "../schemas/auth.schema";
+import { refreshTokenSchema } from "../schemas/token.schema";
 
 export default class AuthController {
   private userModel: UserModel;
@@ -92,7 +93,14 @@ export default class AuthController {
             expiresIn: "7d",
           }
         );
-        res.json({ accessToken, refreshToken });
+        // send refresh token as httpOnly cookie
+        res.cookie("refreshToken", refreshToken, {
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+          httpOnly: true,
+          sameSite: "none",
+          secure: true,
+        });
+        res.json({ accessToken, expiresIn: 3600 });
       } catch (error) {
         throw new AppError({
           name: "Internal server error",
@@ -100,6 +108,88 @@ export default class AuthController {
           message: "Error logging in",
         });
       }
+    }
+  );
+
+  renewAccessToken = asyncHandler(
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const refreshToken = req.cookies.refreshToken;
+
+        console.log("refreshToken - ", refreshToken);
+        if (!refreshToken) {
+          return next(
+            new AppError({
+              name: "Unauthorized",
+              statusCode: 401,
+              message: "Invalid token",
+            })
+          );
+        }
+
+        const decoded = jwt.verify(refreshToken, env.REFRESH_TOKEN_SECRET);
+
+        const result = refreshTokenSchema.safeParse(decoded);
+        if (!result.success) {
+          return next(
+            new AppError({
+              name: "Unauthorized",
+              statusCode: 401,
+              message: "Invalid token",
+            })
+          );
+        }
+
+        const user = await this.userModel.findUserById(result.data.userId);
+
+        if (!user) {
+          return next(
+            new AppError({
+              name: "Unauthorized",
+              statusCode: 401,
+              message: "Invalid credentials",
+            })
+          );
+        }
+
+        const accessToken = jwt.sign(
+          { userId: user.id, type: "access" },
+          env.ACCESS_TOKEN_SECRET,
+          {
+            expiresIn: "1h",
+          }
+        );
+
+        const newRefreshToken = jwt.sign(
+          { userId: user.id, type: "refresh" },
+          env.REFRESH_TOKEN_SECRET,
+          {
+            expiresIn: "7d",
+          }
+        );
+
+        res.cookie("refreshToken", newRefreshToken, {
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+          httpOnly: true,
+          sameSite: "none",
+          secure: true,
+        });
+
+        console.log("accessToken - ", accessToken);
+        res.json({ accessToken });
+      } catch (error) {
+        throw new AppError({
+          name: "Unauthorized",
+          statusCode: 401,
+          message: "Invalid token",
+        });
+      }
+    }
+  );
+
+  status = asyncHandler(
+    async (req: Request, res: Response, next: NextFunction) => {
+      res.json({ message: "User is logged in" });
     }
   );
 }
