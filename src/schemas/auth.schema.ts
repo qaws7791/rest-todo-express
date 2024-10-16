@@ -17,3 +17,11 @@ export const LoginSchema = z.object({
 });
 
 export type LoginInput = z.infer<typeof LoginSchema>;
+
+export const RenewTokenSchema = z.object({
+  body: z.object({
+    refreshToken: z.string(),
+  }),
+});
+
+export type RenewTokenInput = z.infer<typeof RenewTokenSchema>;
