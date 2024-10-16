@@ -87,10 +87,22 @@ flowchart LR
 
 ### /api/v1/auth
 
-| path      | method | description   |
-| --------- | ------ | ------------- |
-| /register | `post` | register user |
-| /login    | `post` | login user    |
+#### /api/v1/auth/register
+
+| Request Method | Request Headers                                              | Request Query | Request Body                                                 |
+| -------------- | ------------------------------------------------------------ | ------------- | ------------------------------------------------------------ |
+| POST           | `Content-Type: application/json`<br />`Accept: application/json` |               | {<br/>    "email":"abcd123456@gmail.com",<br/>    "password": "abcd123456"<br/>} |
+
+| Response Status | Response Body                                          |      |
+| --------------- | ------------------------------------------------------ | ---- |
+| 201             | {<br/>    "message": "User created successfully"<br/>} |      |
+
+
+
+| /register | `post` | register user |       | {email":"abcd12345@gmail.com",    "password":"abcd12345"} | 201: {"message": "User created successfully"} |
+| --------- | ------ | ------------- | ----- | --------------------------------------------------------- | --------------------------------------------- |
+| path      | method | description   | query | body                                                      | response                                      |
+| /login    | `post` | login user    |       | {email":"abcd12345@gmail.com",    "password":"abcd12345"} | 200: {"token":"eyJhbGciO..."}                 |
 
 
 
