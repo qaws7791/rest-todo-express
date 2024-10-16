@@ -8,6 +8,11 @@ export const acceptMiddleware = (
   res: Response,
   next: NextFunction
 ) => {
+  const method = req.method;
+  if (method === "GET" || method === "DELETE" || method === "OPTIONS") {
+    return next();
+  }
+
   const accept = req.accepts(AVAILABLE_MIME_TYPES);
   if (!accept) {
     const details = `Supported MIME types: ${AVAILABLE_MIME_TYPES.join(", ")}`;
