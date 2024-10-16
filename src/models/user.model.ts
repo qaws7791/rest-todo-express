@@ -19,4 +19,12 @@ export default class UserModel {
       },
     });
   }
+
+  async findUserById(id: number) {
+    return prisma.user.findUnique({
+      where: {
+        id,
+      },
+    });
+  }
 }
